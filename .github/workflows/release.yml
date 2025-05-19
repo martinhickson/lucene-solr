@@ -6,6 +6,25 @@ on:
       release_tag:
         description: 'Tag name for the release (e.g. v1.2.3)'
         required: true
+        default: '5.5.5'
+      group_id:
+        description: 'Maven Group ID (default: org.apache.lucene)'
+        required: false
+        default: 'org.apache.lucene'
+      version:
+        description: 'Version of the artifact (default: 5.5.5)'
+        required: false
+        default: '5.5.5'
+      deploy_artifacts:
+        description: 'Deploy artifacts to GitHub Maven repository? (default: false)'
+        required: false
+        default: false
+        type: boolean
+      dry_run:
+        description: 'Perform a dry run for deployment (default: false)'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build:
@@ -28,11 +47,69 @@ jobs:
     - name: Find JARs and generate checksums
       run: |
         mkdir release-assets
-        find . -name "lucene*.jar" -exec cp {} release-assets/ \;
-        cd release-assets
-        for f in *.jar; do
-          sha512sum "$f" > "$f.sha512"
+        find . -name "lucene*.jar" | while read jar; do
+          jar_name=$(basename "$jar" .jar)
+
+          artifact_id="${jar_name%-SNAPSHOT*}"
+          artifact_id="${artifact_id%%-[0-9]*.*}"
+
+          versioned_jar="release-assets/$artifact_id-${{ github.event.inputs.version }}.jar"
+          cp "$jar" "$versioned_jar"
+          sha512sum "$versioned_jar" > "$versioned_jar.sha512"
         done
+
+    - name: Create POM file for JARs
+      run: |
+        echo "Artifact ID list:"
+        for jar in release-assets/*.jar; do
+          jar_name=$(basename "$jar" .jar)
+          
+          artifact_id="${jar_name%-SNAPSHOT*}"
+          artifact_id="${artifact_id%%-[0-9]*.*}"
+          echo ${artifact_id}
+          cat > "release-assets/$artifact_id-${{ github.event.inputs.version }}.pom" <<EOF
+        <project xmlns="http://maven.apache.org/POM/4.0.0"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>org.apache.lucene</groupId>
+          <artifactId>${artifact_id}</artifactId>
+          <version>5.5.5.bravura-1</version>
+          <packaging>jar</packaging>
+          <name>${artifact_id}</name>
+          <url>https://github.com/martinhickson/lucene-solr</url>
+        </project>
+        EOF
+        done
+        ls release-assets/*
+
+    - name: Deploy to GitHub Packages (Optional)
+      if: ${{ github.event.inputs.deploy_artifacts == 'true' }}
+      run: |
+        mkdir -p ~/.m2
+        cat <<EOF > ~/.m2/settings.xml
+        <settings>
+          <servers>
+            <server>
+              <id>github</id>
+              <username>${{ github.actor }}</username>
+              <password>${{ secrets.GITHUB_TOKEN }}</password>
+            </server>
+          </servers>
+        </settings>
+        EOF
+        for jar in release-assets/*.jar; do
+          artifact_id=$(basename "$jar" .jar)
+          pom_file="release-assets/$artifact_id.pom"
+
+          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+            echo "Dry run: mvn -B deploy:deploy-file -Dfile=$jar -DpomFile=$pom_file -DrepositoryId=github -Durl=https://maven.pkg.github.com/${{ github.repository }} -DskipTests -B"
+          else
+            mvn -B deploy:deploy-file -Dfile="$jar" -DpomFile="$pom_file" -DrepositoryId=github -Durl=https://maven.pkg.github.com/${{ github.repository }} -DskipTests -B
+          fi
+        done
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Create Draft Release and Upload Assets
       uses: softprops/action-gh-release@v1
@@ -40,6 +117,6 @@ jobs:
         tag_name: ${{ github.event.inputs.release_tag }}
         name: Release ${{ github.event.inputs.release_tag }}
         draft: true
-        files: release-assets/*
+        files: release-assets/*.jar,release-assets/*.jar.sha512
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

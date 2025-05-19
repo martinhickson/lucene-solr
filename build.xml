@@ -20,6 +20,8 @@
 <project name="lucene-solr" default="-projecthelp" basedir=".">
   <import file="lucene/common-build.xml"/>
 
+  <property name="version" value="5.5.5.bravura-1"/>
+
   <property name="jgit-version" value="4.4.1.201607150455-r"/>
   
   <property name="tests.heap-dump-dir" location="heapdumps"/>
