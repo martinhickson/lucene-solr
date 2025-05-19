@@ -1,0 +1,45 @@
+name: Build & Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Tag name for the release (e.g. v1.2.3)'
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up JDK 8 (Amazon Corretto)
+      uses: actions/setup-java@v4
+      with:
+        java-version: '8'
+        distribution: 'corretto'
+
+    - name: Build with Ant
+      run: |
+        ant --noconfig -noinput -Djavac.source=1.8 -Djavac.target=1.8 -Dversion.java=1.8 -Divy.settings.file=ivy-settings.xml -buildfile build.xml ivy-bootstrap
+        ant -lib /home/runner/.ant/lib -Djavac.source=1.8 -Djavac.target=1.8 -Dversion.java=1.8 -Divy.settings.file=ivy-settings.xml -buildfile build.xml compile jar
+
+    - name: Find JARs and generate checksums
+      run: |
+        mkdir release-assets
+        find . -name "lucene*.jar" -exec cp {} release-assets/ \;
+        cd release-assets
+        for f in *.jar; do
+          sha512sum "$f" > "$f.sha512"
+        done
+
+    - name: Create Draft Release and Upload Assets
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.event.inputs.release_tag }}
+        name: Release ${{ github.event.inputs.release_tag }}
+        draft: true
+        files: release-assets/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

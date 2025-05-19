@@ -33,7 +33,7 @@ import java.io.IOException;
 
 /**
  * Automaton provider for <code>RegExp.</code>
- * {@link RegExp#toAutomaton(AutomatonProvider,int)}
+ * {@link RegExp#toAutomaton(AutomatonProvider)}
  * 
  * @lucene.experimental
  */

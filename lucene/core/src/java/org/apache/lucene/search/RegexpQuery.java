@@ -107,7 +107,7 @@ public class RegexpQuery extends AutomatonQuery {
       int maxDeterminizedStates) {
     super(term,
           new RegExp(term.text(), flags).toAutomaton(
-                       provider, maxDeterminizedStates), maxDeterminizedStates);
+                       provider), maxDeterminizedStates);
   }
   
   /** Prints a user-readable version of this query. */

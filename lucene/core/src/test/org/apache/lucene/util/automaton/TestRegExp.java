@@ -96,4 +96,8 @@ public class TestRegExp extends LuceneTestCase {
     a = new RegExp("#?").toAutomaton(1000);
     assertTrue(a.toString().length() > 0);
   }
+
+  public void testRegExpNoStackOverflow() {
+    new RegExp("(a)|".repeat(50000) + "(a)");
+  }
 }

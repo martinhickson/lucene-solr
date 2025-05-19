@@ -31,6 +31,9 @@
   <caches lockStrategy="${ivy.lock-strategy}" resolutionCacheDir="${ivy.resolution-cache.dir}" /> 
 
   <resolvers>
+    <ibiblio name="main" m2compatible="true" root="https://repo1.maven.org/maven2/" />
+    <ibiblio name="central" m2compatible="true" root="https://repo1.maven.org/maven2/" />
+    <ibiblio name="restlet" root="https://maven.restlet.talend.com" m2compatible="true"/>
     <ibiblio name="sonatype-releases" root="https://oss.sonatype.org/content/repositories/releases" m2compatible="true" />
     <ibiblio name="maven.restlet.org" root="http://maven.restlet.org" m2compatible="true" />
     <ibiblio name="releases.cloudera.com" root="http://repository.cloudera.com/content/repositories/releases" m2compatible="true" />
@@ -39,7 +42,7 @@
     <ibiblio name="svnkit-releases" root="http://maven.tmatesoft.com/content/repositories/releases" m2compatible="true" />
 
     <!-- you might need to tweak this from china so it works -->
-    <ibiblio name="working-chinese-mirror" root="http://uk.maven.org/maven2" m2compatible="true" />
+    <ibiblio name="working-chinese-mirror" root="https://uk.maven.org/maven2" m2compatible="true" />
 
     <filesystem name="local-maven-2" m2compatible="true" local="true">
       <artifact
@@ -51,7 +54,9 @@
     <chain name="default" returnFirst="true" checkmodified="true" changingPattern=".*SNAPSHOT">
       <resolver ref="local"/>
       <!-- <resolver ref="local-maven-2" /> -->
+      <resolver ref="central"/>
       <resolver ref="main"/>
+      <resolver ref="restlet"/>
       <resolver ref="maven.restlet.org" />
       <resolver ref="sonatype-releases" />
       <resolver ref="releases.cloudera.com"/>

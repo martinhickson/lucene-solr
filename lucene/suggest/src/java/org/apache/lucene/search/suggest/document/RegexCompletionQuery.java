@@ -78,7 +78,7 @@ public class RegexCompletionQuery extends CompletionQuery {
    * @param term query is run against {@link Term#field()} and {@link Term#text()}
    *             is interpreted as a regular expression
    * @param flags used as syntax_flag in {@link RegExp#RegExp(String, int)}
-   * @param maxDeterminizedStates used in {@link RegExp#toAutomaton(int)}
+   * @param maxDeterminizedStates used in {@link RegExp#toAutomaton()}
    * @param filter used to query on a sub set of documents
    */
   public RegexCompletionQuery(Term term, int flags, int maxDeterminizedStates, BitsProducer filter) {
@@ -89,6 +89,6 @@ public class RegexCompletionQuery extends CompletionQuery {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    return new CompletionWeight(this, new RegExp(getTerm().text(), flags).toAutomaton(maxDeterminizedStates));
+    return new CompletionWeight(this, new RegExp(getTerm().text(), flags).toAutomaton());
   }
 }
